@@ -1,5 +1,4 @@
-// PhumSpace Prisma Schema Foundation (Sprint 0)
-// Only datasource and generator configured. No business tables created in Sprint 0.
+// PhumSpace Prisma Schema (Sprint 1 — PhumData Core)
 
 generator client {
   provider = "prisma-client-js"
@@ -8,4 +7,263 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum AccessLevel {
+  PUBLIC
+  EDUCATIONAL
+  RESEARCH
+  COMMUNITY_ONLY
+  RESTRICTED
+}
+
+enum EntityType {
+  ARTIFACT
+  ARCHITECTURE
+  FESTIVAL
+  PERFORMING_ART
+  CRAFT
+  BELIEF
+  LITERATURE
+  PLACE
+}
+
+enum PublicationStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  SUPERSEDED
+  WITHDRAWN
+}
+
+enum NameType {
+  PREFERRED
+  ALTERNATE
+  HISTORICAL
+  LOCAL
+  TRANSLITERATION
+  TRANSLATION
+}
+
+enum LanguageCode {
+  vi
+  km
+  en
+}
+
+enum SourceType {
+  BOOK
+  ARTICLE
+  ARCHIVE
+  INTERVIEW
+  FIELD_NOTE
+  PHOTO
+  AUDIO
+  VIDEO
+  WEBSITE
+  DATASET
+}
+
+enum SupportType {
+  SUPPORTS
+  CONTRADICTS
+  CONTEXTUALIZES
+}
+
+enum VerificationOutcome {
+  UNVERIFIED
+  COMMUNITY_CONFIRMED
+  SOURCE_VERIFIED
+  EXPERT_REVIEWED
+}
+
+enum PublicationEventType {
+  PUBLISH
+  ROLLBACK
+}
+
+// ==================== MODELS ====================
+
+model HeritageEntity {
+  id               String                @id @default(uuid()) @db.Uuid
+  canonicalCode    String                @unique @map("canonical_code")
+  type             EntityType
+  accessLevel      AccessLevel           @default(PUBLIC) @map("access_level")
+  currentVersionId String?               @unique @map("current_version_id") @db.Uuid
+  currentVersion   HeritageEntityVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  versions          HeritageEntityVersion[]  @relation("EntityVersions")
+  categories        HeritageEntityCategory[]
+  places            HeritageEntityPlace[]
+  publicationEvents PublicationEvent[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([canonicalCode])
+  @@index([type])
+  @@index([accessLevel])
+  @@map("heritage_entity")
+}
+
+model HeritageEntityVersion {
+  id                String            @id @default(uuid()) @db.Uuid
+  entityId          String            @map("entity_id") @db.Uuid
+  entity            HeritageEntity    @relation("EntityVersions", fields: [entityId], references: [id], onDelete: Cascade)
+  versionNo         Int               @map("version_no")
+  publicationStatus PublicationStatus @default(DRAFT) @map("publication_status")
+
+  summary           String            @db.Text
+  historicalContent String?           @map("historical_content") @db.Text
+  culturalMeaning   String?           @map("cultural_meaning") @db.Text
+
+  names                HeritageEntityName[]
+  evidenceAssertions   EvidenceAssertion[]
+  verificationRecords  VerificationRecord[]
+  currentForEntity     HeritageEntity?       @relation("CurrentVersion")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([entityId, versionNo])
+  @@index([entityId])
+  @@index([publicationStatus])
+  @@map("heritage_entity_version")
+}
+
+model HeritageEntityName {
+  id              String                @id @default(uuid()) @db.Uuid
+  versionId       String                @map("version_id") @db.Uuid
+  version         HeritageEntityVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  language        LanguageCode
+  nameType        NameType              @map("name_type")
+  originalValue   String                @map("original_value")
+  normalizedValue String                @map("normalized_value")
+  script          String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([versionId, language, nameType, originalValue])
+  @@index([versionId])
+  @@index([normalizedValue])
+  @@map("heritage_entity_name")
+}
+
+model HeritageCategory {
+  id          String                   @id @default(uuid()) @db.Uuid
+  slug        String                   @unique
+  name        String
+  description String?                  @db.Text
+  entities    HeritageEntityCategory[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("heritage_category")
+}
+
+model HeritageEntityCategory {
+  entityId   String           @map("entity_id") @db.Uuid
+  categoryId String           @map("category_id") @db.Uuid
+  entity     HeritageEntity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  category   HeritageCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([entityId, categoryId])
+  @@map("heritage_entity_category")
+}
+
+model Place {
+  id        String                @id @default(uuid()) @db.Uuid
+  slug      String                @unique
+  name      String
+  address   String?
+  latitude  Float?
+  longitude Float?
+  summary   String?               @db.Text
+  entities  HeritageEntityPlace[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("place")
+}
+
+model HeritageEntityPlace {
+  entityId String         @map("entity_id") @db.Uuid
+  placeId  String         @map("place_id") @db.Uuid
+  entity   HeritageEntity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  place    Place          @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([entityId, placeId])
+  @@map("heritage_entity_place")
+}
+
+model SourceResource {
+  id                 String              @id @default(uuid()) @db.Uuid
+  title              String
+  creator            String?
+  sourceType         SourceType          @map("source_type")
+  locator            String?
+  rights             String?
+  evidenceAssertions EvidenceAssertion[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("source_resource")
+}
+
+model EvidenceAssertion {
+  id          String                @id @default(uuid()) @db.Uuid
+  versionId   String                @map("version_id") @db.Uuid
+  version     HeritageEntityVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  sourceId    String                @map("source_id") @db.Uuid
+  source      SourceResource        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  claimText   String                @map("claim_text") @db.Text
+  fieldPath   String?               @map("field_path")
+  supportType SupportType           @default(SUPPORTS) @map("support_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([versionId])
+  @@index([sourceId])
+  @@map("evidence_assertion")
+}
+
+model VerificationRecord {
+  id           String                @id @default(uuid()) @db.Uuid
+  versionId    String                @map("version_id") @db.Uuid
+  version      HeritageEntityVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  reviewerName String                @map("reviewer_name")
+  scope        String
+  method       String
+  outcome      VerificationOutcome
+  verifiedAt   DateTime              @default(now()) @map("verified_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([versionId])
+  @@map("verification_record")
+}
+
+model PublicationEvent {
+  id            String               @id @default(uuid()) @db.Uuid
+  entityId      String               @map("entity_id") @db.Uuid
+  entity        HeritageEntity       @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  versionId     String               @map("version_id") @db.Uuid
+  publisherName String               @map("publisher_name")
+  eventType     PublicationEventType @map("event_type")
+  publishedAt   DateTime             @default(now()) @map("published_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entityId])
+  @@map("publication_event")
 }

@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -31,8 +32,23 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
+  // Swagger / OpenAPI setup
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('PhumSpace REST API')
+    .setDescription('Tài liệu API PhumSpace — Nền tảng số hóa & bảo tồn di sản văn hóa Khmer Nam Bộ (PhumData Core)')
+    .setVersion('1.0')
+    .addTag('Health', 'Kiểm tra trạng thái dịch vụ')
+    .addTag('Heritage Entities', 'Truy vấn các thực thể di sản văn hóa đã công bố (PUBLISHED)')
+    .addTag('Places', 'Truy vấn danh sách và chi tiết địa điểm')
+    .addTag('Categories', 'Truy vấn danh mục di sản văn hóa')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api/docs', app, document);
+
   await app.listen(port);
   logger.log(`PhumSpace API is running on: http://localhost:${port}${apiPrefix}`);
+  logger.log(`Swagger OpenAPI Documentation: http://localhost:${port}/api/docs`);
 }
 
 bootstrap();

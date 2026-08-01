@@ -9,7 +9,11 @@
     "dev:web": "pnpm --filter web dev",
     "build": "pnpm --filter contracts build && pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm --recursive lint",
-    "test": "pnpm --recursive test"
+    "test": "pnpm --recursive test",
+    "prisma:generate": "pnpm --filter api prisma:generate",
+    "prisma:migrate": "pnpm --filter api prisma:migrate",
+    "prisma:seed": "pnpm --filter api prisma:seed",
+    "prisma:studio": "pnpm --filter api exec prisma studio"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

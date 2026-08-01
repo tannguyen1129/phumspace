@@ -1,4 +1,4 @@
-# PhumSpace — Heritage & Cultural Platform (Sprint 0)
+# PhumSpace — Heritage & Cultural Platform
 
 PhumSpace là nền tảng AI-powered phục vụ khám phá, học tập, bảo tồn và truyền bá di sản văn hóa Khmer Nam Bộ, khởi tạo tại Trà Vinh.
 
@@ -20,14 +20,10 @@ Hệ điều hành khuyến nghị: **WSL Ubuntu / Linux**
 
 ### Bước 1: Kích hoạt pnpm v9 bằng Corepack
 
-Do dự án sử dụng `pnpm workspace`, trước tiên hãy kích hoạt `pnpm 9` mà không cần cài đặt package global:
-
 ```bash
 corepack prepare pnpm@9 --activate
 pnpm -v
 ```
-
-*Kỳ vọng output:* `9.15.9` hoặc phiên bản pnpm 9.x tương đương.
 
 ---
 
@@ -40,8 +36,6 @@ pnpm install
 ---
 
 ### Bước 3: Tạo các Tệp Môi trường Local (.env)
-
-Sao chép từ các tệp `.env.example` mẫu:
 
 ```bash
 # 1. Root environment
@@ -72,18 +66,22 @@ Dừng PostgreSQL khi không làm việc:
 docker compose down
 ```
 
-Xóa toàn bộ volume dữ liệu khi cần reset:
-
-```bash
-docker compose down -v
-```
-
 ---
 
-### Bước 5: Sinh Prisma Client
+### Bước 5: Chạy Migration & Seed Dữ liệu PhumData Core
 
 ```bash
-pnpm --filter api exec prisma generate
+# 1. Thực hiện migration khởi tạo PhumData Core (Sprint 1)
+pnpm prisma:migrate
+
+# 2. Sinh Prisma Client
+pnpm prisma:generate
+
+# 3. Nạp dữ liệu seed demo (Khởi tạo HeritageEntities, Places, Categories, Sources)
+pnpm prisma:seed
+
+# 4. Mở Prisma Studio để xem dữ liệu trực quan trên giao diện web (Cổng 5555)
+pnpm prisma:studio
 ```
 
 ---
@@ -96,19 +94,9 @@ pnpm --filter api exec prisma generate
 pnpm dev
 ```
 
-Lệnh này sẽ khởi động đồng thời:
 - **Frontend Next.js**: `http://localhost:3000`
 - **Backend NestJS**: `http://localhost:3001` (Global prefix `/api/v1`)
-
-### Hoặc Khởi động Riêng lẻ:
-
-```bash
-# Chỉ chạy Backend NestJS API (Port 3001)
-pnpm dev:api
-
-# Chỉ chạy Frontend Next.js Web (Port 3000)
-pnpm dev:web
-```
+- **Swagger / OpenAPI Documentation**: `http://localhost:3001/api/docs`
 
 ---
 
@@ -116,19 +104,33 @@ pnpm dev:web
 
 | Dịch vụ | URL | Ghi chú |
 |---|---|---|
-| **Frontend Web** | `http://localhost:3000` | Trang giới thiệu PhumSpace & API Connection Status |
+| **Frontend Web** | `http://localhost:3000` | Trang giới thiệu PhumSpace & API Status |
 | **API Health Check** | `http://localhost:3001/api/v1/health` | GET Health status endpoint |
+| **Swagger API Docs** | `http://localhost:3001/api/docs` | Tài liệu OpenAPI tương tác trực tiếp |
+| **Prisma Studio** | `http://localhost:5555` | Giao diện xem/quản trị DB PostgreSQL |
 | **PostgreSQL Database** | `localhost:5432` | DB: `phumspace`, User: `phumspace`, Pass: `phumspace_dev_password` |
 
 ---
 
-## 5. Lệnh Kiểm thử, Lint và Build
+## 5. Danh sách REST APIs Public (Sprint 1 PhumData Core)
+
+Toàn bộ Public REST APIs chỉ trả về dữ liệu đã **PUBLISHED**, tuyệt đối không rò rỉ dữ liệu bản thảo (`DRAFT`) hoặc dữ liệu kiểm duyệt nội bộ:
+
+- `GET /api/v1/heritage-entities` — Danh sách phân trang các thực thể di sản (Hỗ trợ `page`, `limit`, `categorySlug`, `placeSlug`).
+- `GET /api/v1/heritage-entities/:slug` — Chi tiết thực thể di sản theo slug (Trả về 404 nếu không tồn tại hoặc chưa công bố).
+- `GET /api/v1/places` — Danh sách các địa điểm di sản.
+- `GET /api/v1/places/:slug` — Chi tiết địa điểm theo slug.
+- `GET /api/v1/categories` — Danh sách danh mục di sản.
+
+---
+
+## 6. Lệnh Kiểm thử, Lint và Build
 
 ```bash
 # 1. Kiểm tra Type-check & Strict Mode cho toàn monorepo
 pnpm lint
 
-# 2. Chạy Unit Tests cho các modules (HealthModule)
+# 2. Chạy Unit & Integration Tests (Bao gồm các test quy tắc an toàn dữ liệu PhumData)
 pnpm test
 
 # 3. Build sản phẩm sản xuất (Packages -> API -> Web)
@@ -137,26 +139,33 @@ pnpm build
 
 ---
 
-## 6. Lệnh Kiểm tra Hệ thống (System Verification Commands)
+## 7. Lệnh Kiểm tra Hệ thống (System Verification Commands)
 
 ```bash
-# Kiểm tra Health Endpoint của Backend API
-curl -i http://localhost:3001/api/v1/health
+# 1. Kiểm tra danh sách thực thể di sản đã công bố
+curl -i http://localhost:3001/api/v1/heritage-entities
 
-# Output kỳ vọng:
-# HTTP/1.1 200 OK
-# Content-Type: application/json; charset=utf-8
-# {"status":"ok","service":"phumspace-api","timestamp":"2026-08-02T..."}
+# 2. Kiểm tra chi tiết Chùa Âng (chua-hang-tra-vinh)
+curl -i http://localhost:3001/api/v1/heritage-entities/chua-hang-tra-vinh
+
+# 3. Kiểm tra trường hợp slug DRAFT hoặc không tồn tại (Phải trả HTTP 404 Not Found)
+curl -i http://localhost:3001/api/v1/heritage-entities/banh-tet-tra-cuon
+
+# 4. Kiểm tra danh sách địa điểm
+curl -i http://localhost:3001/api/v1/places
+
+# 5. Kiểm tra danh sách danh mục di sản
+curl -i http://localhost:3001/api/v1/categories
 ```
 
 ---
 
-## 7. Cấu trúc Monorepo
+## 8. Cấu trúc Monorepo
 
 ```text
 phumspace-prj/
 ├── apps/
-│   ├── api/          # Backend NestJS (Port 3001, Prefix /api/v1, Prisma, HealthModule)
+│   ├── api/          # Backend NestJS (Port 3001, Prefix /api/v1, Prisma, HealthModule, PhumDataModule, Swagger)
 │   └── web/          # Frontend Next.js App Router (Port 3000, Tailwind CSS, API Status)
 ├── packages/
 │   └── contracts/    # Shared API contracts & TypeScript interfaces (@phumspace/contracts)
