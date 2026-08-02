@@ -10,6 +10,8 @@
     "build": "pnpm --filter contracts build && pnpm --filter api build && pnpm --filter web build",
     "lint": "pnpm --recursive lint",
     "test": "pnpm --recursive test",
+    "e2e": "pnpm --filter web e2e",
+    "passport:rebuild-points": "pnpm --filter api passport:rebuild-points",
     "prisma:generate": "pnpm --filter api prisma:generate",
     "prisma:migrate": "pnpm --filter api prisma:migrate",
     "prisma:seed": "pnpm --filter api prisma:seed",

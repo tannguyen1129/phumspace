@@ -1,6 +1,6 @@
 import { apiClient, ApiError } from './api-client';
 
-describe('API Client (Sprint 2 Tests)', () => {
+describe('API Client (Sprint 2 & 3 Tests)', () => {
   const originalFetch = global.fetch;
 
   afterEach(() => {
@@ -99,5 +99,34 @@ describe('API Client (Sprint 2 Tests)', () => {
     const result = await apiClient.getCategories();
     expect(result).toHaveLength(1);
     expect(result[0].slug).toBe('kien-truc-ton-giao');
+  });
+
+  it('6. getMapPlaces should fetch map markers from /api/v1/map/places', async () => {
+    const mockMapResponse = {
+      data: [
+        {
+          id: '1',
+          slug: 'phuong-8-tp-tra-vinh',
+          name: 'Phường 8',
+          latitude: 9.932467,
+          longitude: 106.345759,
+          placeType: 'TEMPLE',
+          relatedHeritageCount: 2,
+        },
+      ],
+    };
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue(mockMapResponse),
+    } as any);
+
+    const result = await apiClient.getMapPlaces('TEMPLE');
+    expect(result.data).toHaveLength(1);
+    expect(result.data[0].placeType).toBe('TEMPLE');
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/v1/map/places?placeType=TEMPLE'),
+      expect.anything(),
+    );
   });
 });

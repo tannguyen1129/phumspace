@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: phumspace-postgres-prod
+    environment:
+      POSTGRES_DB: phumspace
+      POSTGRES_USER: phumspace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-phumspace_prod_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phumspace -d phumspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: phumspace-api-prod
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: "postgresql://phumspace:${POSTGRES_PASSWORD:-phumspace_prod_password}@postgres:5432/phumspace?schema=public"
+      CORS_ORIGIN: "http://localhost:3000"
+      GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY}"
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: phumspace-web-prod
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NEXT_PUBLIC_API_URL: "http://localhost:3001"
+      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: "${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}"
+      NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID: "${NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID}"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  postgres_prod_data:

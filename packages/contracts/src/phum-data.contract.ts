@@ -65,3 +65,19 @@ export interface CategoryPublicContract {
   description?: string;
   createdAt: string;
 }
+
+export interface MapMarkerContract {
+  id: string;
+  slug: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  placeType: string;
+  shortDescription?: string;
+  address?: string;
+  relatedHeritageCount: number;
+}
+
+export interface MapPlacesResponseContract {
+  data: MapMarkerContract[];
+}

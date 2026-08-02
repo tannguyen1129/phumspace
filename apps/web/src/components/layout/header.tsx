@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Compass, Home, MapPin, Sparkles } from 'lucide-react';
+import { Compass, HelpCircle, Home, Map, MapPin, Scan, Sparkles, BookOpen } from 'lucide-react';
 
 export function Header() {
   return (
@@ -24,24 +24,45 @@ export function Header() {
         <nav className="hidden md:flex items-center gap-1">
           <Link
             href="/"
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
           >
             <Home className="w-4 h-4" />
             Trang chủ
           </Link>
           <Link
-            href="/kham-pha"
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+            href="/so-tay"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
           >
-            <Compass className="w-4 h-4" />
-            Khám phá Di sản
+            <BookOpen className="w-4 h-4 text-amber-400" />
+            Sổ tay Khmer
           </Link>
           <Link
-            href="/dia-diem"
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+            href="/kham-pha"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
           >
-            <MapPin className="w-4 h-4" />
-            Địa điểm
+            <Compass className="w-4 h-4" />
+            Khám phá
+          </Link>
+          <Link
+            href="/quet-di-san"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+          >
+            <Scan className="w-4 h-4 text-amber-400" />
+            Quét di sản
+          </Link>
+          <Link
+            href="/thu-thach"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+          >
+            <HelpCircle className="w-4 h-4 text-amber-400" />
+            Thử thách
+          </Link>
+          <Link
+            href="/ban-do"
+            className="flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-amber-400 hover:bg-slate-900 transition-colors"
+          >
+            <Map className="w-4 h-4" />
+            Bản đồ
           </Link>
         </nav>
 
@@ -49,7 +70,7 @@ export function Header() {
         <div className="hidden sm:flex items-center gap-2">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <Sparkles className="w-3.5 h-3.5" />
-            PhumData Core v1
+            Khmer Handbook Core
           </span>
         </div>
       </div>

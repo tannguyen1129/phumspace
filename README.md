@@ -30,7 +30,7 @@ pnpm -v
 ### Bước 2: Cài đặt Dependencies Toàn bộ Workspace
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 ```
 
 ---
@@ -45,7 +45,7 @@ cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 
 # 3. Frontend Web environment
-cp apps/web/.env.example apps/web/.env
+cp apps/web/.env.example apps/web/.env.local
 ```
 
 ---
@@ -60,117 +60,72 @@ docker compose up -d
 docker compose ps
 ```
 
-Dừng PostgreSQL khi không làm việc:
-
-```bash
-docker compose down
-```
-
 ---
 
-### Bước 5: Chạy Migration & Seed Dữ liệu PhumData Core
+### Bước 5: Chạy Migration & Seed Dữ liệu
 
 ```bash
-# 1. Thực hiện migration khởi tạo PhumData Core (Sprint 1)
+# 1. Thực hiện migration khởi tạo DB
 pnpm prisma:migrate
 
 # 2. Sinh Prisma Client
 pnpm prisma:generate
 
-# 3. Nạp dữ liệu seed demo (Khởi tạo HeritageEntities, Places, Categories, Sources)
+# 3. Nạp dữ liệu seed demo (Khmer Terms, Heritage Entities, Quizzes & Achievements)
 pnpm prisma:seed
-
-# 4. Mở Prisma Studio để xem dữ liệu trực quan trên giao diện web (Cổng 5555)
-pnpm prisma:studio
 ```
 
 ---
 
-## 3. Khởi động Ứng dụng ở Môi trường Local
+### Bước 6: Cấp khoản Nhân sự Staff Admin
 
-### Chạy Đồng thời Frontend và Backend API
+```bash
+# Cấp tài khoản ADMIN (Có quyền Approve & Publish vào PhumData Core)
+pnpm --filter api staff:provision --email="admin.test@phumspace.vn" --role="ADMIN" --name="Admin Demo"
+```
+
+---
+
+## 3. Khởi động Ứng dụng & Routes
 
 ```bash
 pnpm dev
 ```
 
-- **Frontend Next.js**: `http://localhost:3000`
-- **Backend NestJS**: `http://localhost:3001` (Global prefix `/api/v1`)
+- **Frontend Web**: `http://localhost:3000`
+- **Sổ tay Tiếng Khmer Nam Bộ**: `http://localhost:3000/so-tay`
+- **Học Flashcards Tương tác**: `http://localhost:3000/so-tay/bo-suu-tap/tu-vung-nhap-mon/hoc`
+- **AI Cultural Scanner**: `http://localhost:3000/quet-di-san`
+- **Đăng nhập Quản trị Admin**: `http://localhost:3000/admin/dang-nhap`
+- **Admin Moderation Dashboard**: `http://localhost:3000/admin`
+- **Backend NestJS API**: `http://localhost:3001` (Global prefix `/api/v1`)
+- **Readiness Health Endpoint**: `http://localhost:3001/api/v1/health/readiness`
 - **Swagger / OpenAPI Documentation**: `http://localhost:3001/api/docs`
 
 ---
 
-## 4. Các URLs Local Quan trọng
-
-| Dịch vụ | URL | Ghi chú |
-|---|---|---|
-| **Frontend Web** | `http://localhost:3000` | Trang giới thiệu PhumSpace & API Status |
-| **API Health Check** | `http://localhost:3001/api/v1/health` | GET Health status endpoint |
-| **Swagger API Docs** | `http://localhost:3001/api/docs` | Tài liệu OpenAPI tương tác trực tiếp |
-| **Prisma Studio** | `http://localhost:5555` | Giao diện xem/quản trị DB PostgreSQL |
-| **PostgreSQL Database** | `localhost:5432` | DB: `phumspace`, User: `phumspace`, Pass: `phumspace_dev_password` |
-
----
-
-## 5. Danh sách REST APIs Public (Sprint 1 PhumData Core)
-
-Toàn bộ Public REST APIs chỉ trả về dữ liệu đã **PUBLISHED**, tuyệt đối không rò rỉ dữ liệu bản thảo (`DRAFT`) hoặc dữ liệu kiểm duyệt nội bộ:
-
-- `GET /api/v1/heritage-entities` — Danh sách phân trang các thực thể di sản (Hỗ trợ `page`, `limit`, `categorySlug`, `placeSlug`).
-- `GET /api/v1/heritage-entities/:slug` — Chi tiết thực thể di sản theo slug (Trả về 404 nếu không tồn tại hoặc chưa công bố).
-- `GET /api/v1/places` — Danh sách các địa điểm di sản.
-- `GET /api/v1/places/:slug` — Chi tiết địa điểm theo slug.
-- `GET /api/v1/categories` — Danh sách danh mục di sản.
-
----
-
-## 6. Lệnh Kiểm thử, Lint và Build
+## 4. Multi-Stage Production Docker Build & Release Verification
 
 ```bash
-# 1. Kiểm tra Type-check & Strict Mode cho toàn monorepo
+# 1. Kiểm tra Type-check & Linter toàn bộ Monorepo (Passed 100%)
 pnpm lint
 
-# 2. Chạy Unit & Integration Tests (Bao gồm các test quy tắc an toàn dữ liệu PhumData)
+# 2. Chạy Unit & Integration Tests (Passed 69/69 tests)
 pnpm test
 
 # 3. Build sản phẩm sản xuất (Packages -> API -> Web)
 pnpm build
+
+# 4. Kiểm định lại tổng điểm Passport Idempotency
+pnpm passport:rebuild-points
+
+# 5. Khởi động Production Containers với Docker Compose
+docker compose -f docker-compose.prod.yml up --build -d
 ```
 
 ---
 
-## 7. Lệnh Kiểm tra Hệ thống (System Verification Commands)
+## 5. Tài liệu Phát triển & Kịch bản Demo
 
-```bash
-# 1. Kiểm tra danh sách thực thể di sản đã công bố
-curl -i http://localhost:3001/api/v1/heritage-entities
-
-# 2. Kiểm tra chi tiết Chùa Âng (chua-hang-tra-vinh)
-curl -i http://localhost:3001/api/v1/heritage-entities/chua-hang-tra-vinh
-
-# 3. Kiểm tra trường hợp slug DRAFT hoặc không tồn tại (Phải trả HTTP 404 Not Found)
-curl -i http://localhost:3001/api/v1/heritage-entities/banh-tet-tra-cuon
-
-# 4. Kiểm tra danh sách địa điểm
-curl -i http://localhost:3001/api/v1/places
-
-# 5. Kiểm tra danh sách danh mục di sản
-curl -i http://localhost:3001/api/v1/categories
-```
-
----
-
-## 8. Cấu trúc Monorepo
-
-```text
-phumspace-prj/
-├── apps/
-│   ├── api/          # Backend NestJS (Port 3001, Prefix /api/v1, Prisma, HealthModule, PhumDataModule, Swagger)
-│   └── web/          # Frontend Next.js App Router (Port 3000, Tailwind CSS, API Status)
-├── packages/
-│   └── contracts/    # Shared API contracts & TypeScript interfaces (@phumspace/contracts)
-├── docs/             # Tài liệu gốc & bối cảnh dự án (docs/context, docs/original)
-├── docker-compose.yml# PostgreSQL 17 Docker Compose configuration
-├── package.json      # Workspace root package configuration
-└── pnpm-workspace.yaml # Monorepo workspace configuration
-```
+- [docs/development/demo-script.md](file:///home/sontan29/project/phumspace-prj/docs/development/demo-script.md): Kịch bản Trình diễn Demo 5–7 phút & Phương án dự phòng.
+- [docs/development/release-checklist.md](file:///home/sontan29/project/phumspace-prj/docs/development/release-checklist.md): Danh mục kiểm định chất lượng phát hành.

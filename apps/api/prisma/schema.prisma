@@ -1,4 +1,4 @@
-// PhumSpace Prisma Schema (Sprint 1 — PhumData Core)
+// PhumSpace Prisma Schema (Sprint 7B — Interactive Khmer Handbook & Learning Experience)
 
 generator client {
   provider = "prisma-client-js"
@@ -85,20 +85,136 @@ enum PublicationEventType {
   ROLLBACK
 }
 
+enum PlaceType {
+  TEMPLE
+  MUSEUM
+  CULTURAL_SITE
+  FESTIVAL_VENUE
+  CRAFT_VILLAGE
+  FOOD_LOCATION
+  OTHER
+}
+
+enum QuizStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum QuizDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum PassportStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PassportActivityType {
+  QUIZ_COMPLETED
+  QUIZ_PASSED
+  PERFECT_QUIZ
+  SCAN_MATCHED
+  HANDBOOK_COLLECTION_COMPLETED
+}
+
+enum AchievementStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ContributionType {
+  NEW_HERITAGE_CONTENT
+  CORRECTION
+  LOCAL_NAME
+  KHMER_LANGUAGE
+  AUDIO_RECORDING
+  IMAGE_MEDIA
+  PLACE_INFORMATION
+  CULTURAL_STORY
+}
+
+enum ContributionStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  NEEDS_MORE_INFORMATION
+  APPROVED
+  REJECTED
+  WITHDRAWN
+  PUBLISHED
+}
+
+enum ContributionMediaType {
+  IMAGE
+  AUDIO
+}
+
+enum StaffStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum StaffRole {
+  REVIEWER
+  EDITOR
+  ADMIN
+}
+
+enum SecurityEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  SESSION_CREATED
+  SESSION_REVOKED
+  ACCESS_DENIED
+  ROLE_CHANGED
+}
+
+enum ReviewAssignmentStatus {
+  ACTIVE
+  RELEASED
+  COMPLETED
+  EXPIRED
+}
+
+enum TermLearningStatus {
+  NEW
+  LEARNING
+  LEARNED
+}
+
 // ==================== MODELS ====================
 
 model HeritageEntity {
-  id               String                @id @default(uuid()) @db.Uuid
-  canonicalCode    String                @unique @map("canonical_code")
+  id               String                 @id @default(uuid()) @db.Uuid
+  canonicalCode    String                 @unique @map("canonical_code")
   type             EntityType
-  accessLevel      AccessLevel           @default(PUBLIC) @map("access_level")
-  currentVersionId String?               @unique @map("current_version_id") @db.Uuid
+  accessLevel      AccessLevel            @default(PUBLIC) @map("access_level")
+  currentVersionId String?                @unique @map("current_version_id") @db.Uuid
   currentVersion   HeritageEntityVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
 
-  versions          HeritageEntityVersion[]  @relation("EntityVersions")
-  categories        HeritageEntityCategory[]
-  places            HeritageEntityPlace[]
-  publicationEvents PublicationEvent[]
+  versions               HeritageEntityVersion[] @relation("EntityVersions")
+  categories             HeritageEntityCategory[]
+  places                 HeritageEntityPlace[]
+  publicationEvents      PublicationEvent[]
+  quizQuestions          QuizQuestion[]
+  communityContributions CommunityContribution[]
+  khmerTerms             KhmerTerm[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -120,10 +236,10 @@ model HeritageEntityVersion {
   historicalContent String?           @map("historical_content") @db.Text
   culturalMeaning   String?           @map("cultural_meaning") @db.Text
 
-  names                HeritageEntityName[]
-  evidenceAssertions   EvidenceAssertion[]
-  verificationRecords  VerificationRecord[]
-  currentForEntity     HeritageEntity?       @relation("CurrentVersion")
+  names               HeritageEntityName[]
+  evidenceAssertions  EvidenceAssertion[]
+  verificationRecords VerificationRecord[]
+  currentForEntity    HeritageEntity?       @relation("CurrentVersion")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -178,19 +294,27 @@ model HeritageEntityCategory {
 }
 
 model Place {
-  id        String                @id @default(uuid()) @db.Uuid
-  slug      String                @unique
-  name      String
-  address   String?
-  latitude  Float?
-  longitude Float?
-  summary   String?               @db.Text
-  entities  HeritageEntityPlace[]
+  id                 String                @id @default(uuid()) @db.Uuid
+  slug               String                @unique
+  name               String
+  address            String?
+  administrativeArea String?               @map("administrative_area")
+  placeType          PlaceType             @default(CULTURAL_SITE) @map("place_type")
+  latitude           Float?
+  longitude          Float?
+  mapVisibility      Boolean               @default(true) @map("map_visibility")
+  coordinateAccuracy String?               @map("coordinate_accuracy")
+  summary            String?               @db.Text
+  entities           HeritageEntityPlace[]
+  contributions      CommunityContribution[]
+  khmerTerms         KhmerTerm[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([slug])
+  @@index([placeType])
+  @@index([mapVisibility])
   @@map("place")
 }
 
@@ -212,6 +336,9 @@ model SourceResource {
   locator            String?
   rights             String?
   evidenceAssertions EvidenceAssertion[]
+  quizQuestions      QuizQuestion[]
+  termMeanings       KhmerTermMeaning[]
+  termExamples       KhmerTermExample[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -266,4 +393,631 @@ model PublicationEvent {
 
   @@index([entityId])
   @@map("publication_event")
+}
+
+model ScanLog {
+  id                  String   @id @default(uuid()) @db.Uuid
+  scanId              String   @unique @map("scan_id") @db.Uuid
+  decision            String
+  confidenceBand      String   @map("confidence_band")
+  matchedEntityId     String?  @map("matched_entity_id") @db.Uuid
+  modelAlias          String   @map("model_alias")
+  promptVersion       String   @map("prompt_version")
+  outputSchemaVersion String   @map("output_schema_version")
+  latencyMs           Int      @map("latency_ms")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([scanId])
+  @@index([decision])
+  @@map("scan_log")
+}
+
+model Quiz {
+  id               String         @id @default(uuid()) @db.Uuid
+  slug             String         @unique
+  title            String
+  description      String?        @db.Text
+  status           QuizStatus     @default(DRAFT)
+  difficulty       QuizDifficulty @default(EASY)
+  passingScore     Int            @default(70) @map("passing_score")
+  estimatedMinutes Int            @default(5) @map("estimated_minutes")
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([status])
+  @@map("quiz")
+}
+
+model QuizQuestion {
+  id               String          @id @default(uuid()) @db.Uuid
+  quizId           String          @map("quiz_id") @db.Uuid
+  quiz             Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionText     String          @map("question_text") @db.Text
+  questionType     QuestionType    @default(SINGLE_CHOICE) @map("question_type")
+  explanation      String?         @db.Text
+  order            Int             @default(1)
+  points           Int             @default(10)
+  status           QuizStatus      @default(PUBLISHED)
+  heritageEntityId String?         @map("heritage_entity_id") @db.Uuid
+  heritageEntity   HeritageEntity? @relation(fields: [heritageEntityId], references: [id], onDelete: SetNull)
+  sourceResourceId String?         @map("source_resource_id") @db.Uuid
+  sourceResource   SourceResource? @relation(fields: [sourceResourceId], references: [id], onDelete: SetNull)
+
+  options QuizQuestionOption[]
+  answers QuizAnswer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([quizId])
+  @@index([status])
+  @@map("quiz_question")
+}
+
+model QuizQuestionOption {
+  id         String       @id @default(uuid()) @db.Uuid
+  questionId String       @map("question_id") @db.Uuid
+  question   QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionText String       @map("option_text") @db.Text
+  order      Int          @default(1)
+  isCorrect  Boolean      @default(false) @map("is_correct")
+  answers    QuizAnswer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([questionId])
+  @@map("quiz_question_option")
+}
+
+model QuizAttempt {
+  id               String        @id @default(uuid()) @db.Uuid
+  attemptToken     String        @unique @default(uuid()) @map("attempt_token")
+  quizId           String        @map("quiz_id") @db.Uuid
+  quiz             Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  status           AttemptStatus @default(IN_PROGRESS)
+  totalQuestions   Int           @map("total_questions")
+  score            Int           @default(0)
+  maxPossibleScore Int           @default(0) @map("max_possible_score")
+  percentageScore  Float         @default(0) @map("percentage_score")
+  isPassed         Boolean       @default(false) @map("is_passed")
+
+  startedAt   DateTime     @default(now()) @map("started_at")
+  completedAt DateTime?    @map("completed_at")
+  answers     QuizAnswer[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([attemptToken])
+  @@index([quizId])
+  @@map("quiz_attempt")
+}
+
+model QuizAnswer {
+  id               String              @id @default(uuid()) @db.Uuid
+  attemptId        String              @map("attempt_id") @db.Uuid
+  attempt          QuizAttempt         @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId       String              @map("question_id") @db.Uuid
+  question         QuizQuestion        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionId String?             @map("selected_option_id") @db.Uuid
+  selectedOption   QuizQuestionOption? @relation(fields: [selectedOptionId], references: [id], onDelete: SetNull)
+  isCorrect        Boolean             @default(false) @map("is_correct")
+  awardedPoints    Int                 @default(0) @map("awarded_points")
+
+  answeredAt DateTime @default(now()) @map("answered_at")
+
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@map("quiz_answer")
+}
+
+model Passport {
+  id          String         @id @default(uuid()) @db.Uuid
+  status      PassportStatus @default(ACTIVE)
+  totalPoints Int            @default(0) @map("total_points")
+
+  sessions           PassportSession[]
+  activities         PassportActivity[]
+  achievements       PassportAchievement[]
+  contributions      CommunityContribution[]
+  termProgresses     PassportTermProgress[]
+  collectionProgresses PassportCollectionProgress[]
+
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  lastActivityAt DateTime @default(now()) @map("last_activity_at")
+
+  @@index([status])
+  @@map("passport")
+}
+
+model PassportSession {
+  id         String    @id @default(uuid()) @db.Uuid
+  passportId String    @map("passport_id") @db.Uuid
+  passport   Passport  @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique @map("token_hash")
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at")
+
+  @@index([passportId])
+  @@index([tokenHash])
+  @@map("passport_session")
+}
+
+model PassportActivity {
+  id             String               @id @default(uuid()) @db.Uuid
+  passportId     String               @map("passport_id") @db.Uuid
+  passport       Passport             @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  activityType   PassportActivityType @map("activity_type")
+  sourceType     String               @map("source_type")
+  sourceId       String               @map("source_id")
+  pointsAwarded  Int                  @default(0) @map("points_awarded")
+  idempotencyKey String               @unique @map("idempotency_key")
+
+  occurredAt DateTime @default(now()) @map("occurred_at")
+
+  @@index([passportId])
+  @@index([idempotencyKey])
+  @@map("passport_activity")
+}
+
+model Achievement {
+  id          String            @id @default(uuid()) @db.Uuid
+  code        String            @unique
+  title       String
+  description String            @db.Text
+  iconKey     String            @map("icon_key")
+  status      AchievementStatus @default(PUBLISHED)
+  ruleType    String            @map("rule_type")
+  ruleConfig  Json?             @map("rule_config")
+
+  earnedPassports PassportAchievement[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([code])
+  @@index([status])
+  @@map("achievement")
+}
+
+model PassportAchievement {
+  id                   String      @id @default(uuid()) @db.Uuid
+  passportId           String      @map("passport_id") @db.Uuid
+  passport             Passport    @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  achievementId        String      @map("achievement_id") @db.Uuid
+  achievement          Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  earnedAt             DateTime    @default(now()) @map("earned_at")
+  triggeringActivityId String?     @map("triggering_activity_id")
+
+  @@unique([passportId, achievementId])
+  @@index([passportId])
+  @@map("passport_achievement")
+}
+
+model CommunityContribution {
+  id                      String             @id @default(uuid()) @db.Uuid
+  publicId                String             @unique @default(uuid()) @map("public_id") @db.Uuid
+  passportId              String?            @map("passport_id") @db.Uuid
+  passport                Passport?          @relation(fields: [passportId], references: [id], onDelete: SetNull)
+  contributionType        ContributionType   @map("contribution_type")
+  status                  ContributionStatus @default(DRAFT)
+  version                 Int                @default(1)
+  title                   String
+  description             String             @db.Text
+  languageCode            LanguageCode       @default(vi) @map("language_code")
+  relatedHeritageEntityId String?            @map("related_heritage_entity_id") @db.Uuid
+  relatedHeritageEntity   HeritageEntity?    @relation(fields: [relatedHeritageEntityId], references: [id], onDelete: SetNull)
+  relatedPlaceId          String?            @map("related_place_id") @db.Uuid
+  relatedPlace            Place?             @relation(fields: [relatedPlaceId], references: [id], onDelete: SetNull)
+
+  fields            ContributionField[]
+  media             ContributionMedia[]
+  consent           ContributionConsent?
+  statusHistory     ContributionStatusHistory[]
+  reviewAssignments ContributionReviewAssignment[]
+  reviews           ContributionReview[]
+
+  submittedAt DateTime? @map("submitted_at")
+  withdrawnAt DateTime? @map("withdrawn_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([publicId])
+  @@index([passportId])
+  @@index([status])
+  @@map("community_contribution")
+}
+
+model ContributionField {
+  id             String                @id @default(uuid()) @db.Uuid
+  contributionId String                @map("contribution_id") @db.Uuid
+  contribution   CommunityContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  fieldKey       String                @map("field_key")
+  submittedValue String                @map("submitted_value") @db.Text
+  languageCode   LanguageCode?         @map("language_code")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([contributionId])
+  @@map("contribution_field")
+}
+
+model ContributionMedia {
+  id               String                @id @default(uuid()) @db.Uuid
+  contributionId   String                @map("contribution_id") @db.Uuid
+  contribution     CommunityContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  mediaType        ContributionMediaType @map("media_type")
+  storageKey       String                @map("storage_key")
+  originalFileName String                @map("original_file_name")
+  mimeType         String                @map("mime_type")
+  sizeBytes        Int                   @map("size_bytes")
+  checksum         String?
+  durationSeconds  Int?                  @map("duration_seconds")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([contributionId])
+  @@map("contribution_media")
+}
+
+model ContributionConsent {
+  id                    String                @id @default(uuid()) @db.Uuid
+  contributionId        String                @unique @map("contribution_id") @db.Uuid
+  contribution          CommunityContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  consentVersion        String                @default("1.0.0") @map("consent_version")
+  contributorOwnsRights Boolean               @default(true) @map("contributor_owns_rights")
+  allowPublicDisplay    Boolean               @default(true) @map("allow_public_display")
+  allowEducationalUse   Boolean               @default(true) @map("allow_educational_use")
+  allowResearchUse      Boolean               @default(true) @map("allow_research_use")
+  allowCommercialUse    Boolean               @default(false) @map("allow_commercial_use")
+  allowAiProcessing     Boolean               @default(false) @map("allow_ai_processing")
+  attributionPreference String                @default("COMMUNITY") @map("attribution_preference")
+
+  consentedAt DateTime  @default(now()) @map("consented_at")
+  withdrawnAt DateTime? @map("withdrawn_at")
+
+  @@map("contribution_consent")
+}
+
+model ContributionStatusHistory {
+  id             String                @id @default(uuid()) @db.Uuid
+  contributionId String                @map("contribution_id") @db.Uuid
+  contribution   CommunityContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  fromStatus     ContributionStatus    @map("from_status")
+  toStatus       ContributionStatus    @map("to_status")
+  reasonCode     String?               @map("reason_code")
+  publicMessage  String?               @map("public_message") @db.Text
+  actorType      String                @default("GUEST_USER") @map("actor_type")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([contributionId])
+  @@map("contribution_status_history")
+}
+
+model StaffUser {
+  id               String       @id @default(uuid()) @db.Uuid
+  externalProvider String       @default("google") @map("external_provider")
+  externalSubject  String       @map("external_subject")
+  email            String       @unique
+  displayName      String?      @map("display_name")
+  status           StaffStatus  @default(ACTIVE)
+
+  sessions                StaffSession[]
+  roles                   StaffRoleAssignment[]          @relation("UserRoles")
+  assignedRoles           StaffRoleAssignment[]          @relation("CreatedRoles")
+  securityEvents          StaffSecurityEvent[]
+  reviewAssignments       ContributionReviewAssignment[] @relation("AssignedStaff")
+  createdReviewAssignments ContributionReviewAssignment[] @relation("AssignerStaff")
+  reviews                 ContributionReview[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  @@unique([externalProvider, externalSubject])
+  @@index([email])
+  @@index([status])
+  @@map("staff_user")
+}
+
+model StaffSession {
+  id          String    @id @default(uuid()) @db.Uuid
+  staffUserId String    @map("staff_user_id") @db.Uuid
+  staffUser   StaffUser @relation(fields: [staffUserId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique @map("token_hash")
+  expiresAt   DateTime  @map("expires_at")
+  revokedAt   DateTime? @map("revoked_at")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  lastSeenAt DateTime  @default(now()) @map("last_seen_at")
+
+  @@index([staffUserId])
+  @@index([tokenHash])
+  @@map("staff_session")
+}
+
+model StaffRoleAssignment {
+  id                   String    @id @default(uuid()) @db.Uuid
+  staffUserId          String    @map("staff_user_id") @db.Uuid
+  staffUser            StaffUser @relation("UserRoles", fields: [staffUserId], references: [id], onDelete: Cascade)
+  role                 StaffRole
+  createdByStaffUserId String?   @map("created_by_staff_user_id") @db.Uuid
+  createdByStaffUser   StaffUser? @relation("CreatedRoles", fields: [createdByStaffUserId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([staffUserId, role])
+  @@index([staffUserId])
+  @@map("staff_role_assignment")
+}
+
+model StaffSecurityEvent {
+  id          String            @id @default(uuid()) @db.Uuid
+  staffUserId String?           @map("staff_user_id") @db.Uuid
+  staffUser   StaffUser?        @relation(fields: [staffUserId], references: [id], onDelete: SetNull)
+  eventType   SecurityEventType @map("event_type")
+  outcome     String
+  metadata    Json?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([staffUserId])
+  @@index([eventType])
+  @@map("staff_security_event")
+}
+
+model ContributionReviewAssignment {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  contributionId        String                 @map("contribution_id") @db.Uuid
+  contribution          CommunityContribution  @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  assignedStaffUserId   String                 @map("assigned_staff_user_id") @db.Uuid
+  assignedStaffUser     StaffUser              @relation("AssignedStaff", fields: [assignedStaffUserId], references: [id], onDelete: Cascade)
+  assignedByStaffUserId String?                @map("assigned_by_staff_user_id") @db.Uuid
+  assignedByStaffUser   StaffUser?             @relation("AssignerStaff", fields: [assignedByStaffUserId], references: [id], onDelete: SetNull)
+  status                ReviewAssignmentStatus @default(ACTIVE)
+
+  assignedAt DateTime  @default(now()) @map("assigned_at")
+  expiresAt  DateTime? @map("expires_at")
+  releasedAt DateTime? @map("released_at")
+
+  @@index([contributionId])
+  @@index([assignedStaffUserId])
+  @@map("contribution_review_assignment")
+}
+
+model ContributionReview {
+  id                  String                @id @default(uuid()) @db.Uuid
+  contributionId      String                @map("contribution_id") @db.Uuid
+  contribution        CommunityContribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  reviewerStaffUserId String                @map("reviewer_staff_user_id") @db.Uuid
+  reviewerStaffUser   StaffUser             @relation(fields: [reviewerStaffUserId], references: [id], onDelete: Cascade)
+  recommendation      String
+  publicMessage       String?               @db.Text
+  internalNote        String?               @db.Text
+  checklistResult     Json?                 @map("checklist_result")
+
+  reviewedAt DateTime @default(now()) @map("reviewed_at")
+
+  @@index([contributionId])
+  @@map("contribution_review")
+}
+
+model KhmerTerm {
+  id               String                 @id @default(uuid()) @db.Uuid
+  slug             String                 @unique
+  status           PublicationStatus      @default(DRAFT)
+  accessLevel      AccessLevel            @default(PUBLIC) @map("access_level")
+  currentVersionId String?                @unique @map("current_version_id") @db.Uuid
+  currentVersion   KhmerTermVersion?      @relation("CurrentTermVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+
+  heritageEntityId String?                @map("heritage_entity_id") @db.Uuid
+  heritageEntity   HeritageEntity?        @relation(fields: [heritageEntityId], references: [id], onDelete: SetNull)
+  placeId          String?                @map("place_id") @db.Uuid
+  place            Place?                 @relation(fields: [placeId], references: [id], onDelete: SetNull)
+
+  versions         KhmerTermVersion[]     @relation("TermVersions")
+  topics           KhmerTermTopic[]
+  collections      HandbookCollectionItem[]
+  passportProgress PassportTermProgress[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([status])
+  @@map("khmer_term")
+}
+
+model KhmerTermVersion {
+  id                    String            @id @default(uuid()) @db.Uuid
+  termId                String            @map("term_id") @db.Uuid
+  term                  KhmerTerm         @relation("TermVersions", fields: [termId], references: [id], onDelete: Cascade)
+  versionNo             Int               @map("version_no")
+  publicationStatus     PublicationStatus @default(DRAFT) @map("publication_status")
+
+  scriptText            String            @map("script_text")
+  normalizedScriptText  String            @map("normalized_script_text")
+  transliteration       String?
+  transliterationSystem String?           @map("transliteration_system")
+  partOfSpeech          String?           @map("part_of_speech")
+  usageRegister         String?           @map("usage_register")
+  shortDefinitionVi     String            @map("short_definition_vi") @db.Text
+  shortDefinitionEn     String?           @map("short_definition_en") @db.Text
+  culturalNote          String?           @map("cultural_note") @db.Text
+
+  meanings       KhmerTermMeaning[]
+  examples       KhmerTermExample[]
+  pronunciations KhmerPronunciation[]
+  currentForTerm KhmerTerm?         @relation("CurrentTermVersion")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  publishedAt DateTime? @map("published_at")
+
+  @@unique([termId, versionNo])
+  @@index([termId])
+  @@index([normalizedScriptText])
+  @@map("khmer_term_version")
+}
+
+model KhmerTermMeaning {
+  id               String           @id @default(uuid()) @db.Uuid
+  termVersionId    String           @map("term_version_id") @db.Uuid
+  termVersion      KhmerTermVersion @relation(fields: [termVersionId], references: [id], onDelete: Cascade)
+  languageCode     LanguageCode     @default(vi) @map("language_code")
+  meaningText      String           @map("meaning_text") @db.Text
+  order            Int              @default(1)
+  sourceResourceId String?          @map("source_resource_id") @db.Uuid
+  sourceResource   SourceResource?  @relation(fields: [sourceResourceId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([termVersionId])
+  @@map("khmer_term_meaning")
+}
+
+model KhmerTermExample {
+  id                  String           @id @default(uuid()) @db.Uuid
+  termVersionId       String           @map("term_version_id") @db.Uuid
+  termVersion         KhmerTermVersion @relation(fields: [termVersionId], references: [id], onDelete: Cascade)
+  khmerText           String           @map("khmer_text") @db.Text
+  normalizedKhmerText String           @map("normalized_khmer_text") @db.Text
+  transliteration     String?          @db.Text
+  translationVi       String?          @map("translation_vi") @db.Text
+  translationEn       String?          @map("translation_en") @db.Text
+  contextNote         String?          @map("context_note") @db.Text
+  sourceResourceId    String?          @map("source_resource_id") @db.Uuid
+  sourceResource      SourceResource?  @relation(fields: [sourceResourceId], references: [id], onDelete: SetNull)
+  order               Int              @default(1)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([termVersionId])
+  @@map("khmer_term_example")
+}
+
+model KhmerPronunciation {
+  id                   String              @id @default(uuid()) @db.Uuid
+  termVersionId        String              @map("term_version_id") @db.Uuid
+  termVersion          KhmerTermVersion    @relation(fields: [termVersionId], references: [id], onDelete: Cascade)
+  mediaStorageKey      String?             @map("media_storage_key")
+  speakerAttribution   String?             @map("speaker_attribution")
+  speakerRegion        String?             @map("speaker_region")
+  pronunciationVariant String?             @map("pronunciation_variant")
+  durationSeconds      Int?                @map("duration_seconds")
+  rightsStatus         String              @default("PUBLIC_ALLOWED") @map("rights_status")
+  consentReference     String?             @map("consent_reference")
+  verificationStatus   VerificationOutcome @default(SOURCE_VERIFIED) @map("verification_status")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([termVersionId])
+  @@map("khmer_pronunciation")
+}
+
+model HandbookTopic {
+  id          String            @id @default(uuid()) @db.Uuid
+  slug        String            @unique
+  titleVi     String            @map("title_vi")
+  titleKm     String?           @map("title_km")
+  description String?           @db.Text
+  status      PublicationStatus @default(PUBLISHED)
+  order       Int               @default(1)
+
+  terms KhmerTermTopic[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("handbook_topic")
+}
+
+model KhmerTermTopic {
+  termId  String        @map("term_id") @db.Uuid
+  topicId String        @map("topic_id") @db.Uuid
+  term    KhmerTerm     @relation(fields: [termId], references: [id], onDelete: Cascade)
+  topic   HandbookTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([termId, topicId])
+  @@map("khmer_term_topic")
+}
+
+model HandbookCollection {
+  id          String            @id @default(uuid()) @db.Uuid
+  slug        String            @unique
+  title       String
+  description String?           @db.Text
+  status      PublicationStatus @default(PUBLISHED)
+  difficulty  QuizDifficulty?   @default(EASY)
+  order       Int               @default(1)
+
+  items            HandbookCollectionItem[]
+  passportProgress PassportCollectionProgress[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("handbook_collection")
+}
+
+model HandbookCollectionItem {
+  collectionId String             @map("collection_id") @db.Uuid
+  termId       String             @map("term_id") @db.Uuid
+  collection   HandbookCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  term         KhmerTerm          @relation(fields: [termId], references: [id], onDelete: Cascade)
+  order        Int                @default(1)
+
+  @@id([collectionId, termId])
+  @@map("handbook_collection_item")
+}
+
+model PassportTermProgress {
+  id             String             @id @default(uuid()) @db.Uuid
+  passportId     String             @map("passport_id") @db.Uuid
+  passport       Passport           @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  termId         String             @map("term_id") @db.Uuid
+  term           KhmerTerm          @relation(fields: [termId], references: [id], onDelete: Cascade)
+  status         TermLearningStatus @default(LEARNING)
+
+  firstViewedAt  DateTime  @default(now()) @map("first_viewed_at")
+  lastReviewedAt DateTime  @default(now()) @map("last_reviewed_at")
+  learnedAt      DateTime? @map("learned_at")
+  reviewCount    Int       @default(1) @map("review_count")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([passportId, termId])
+  @@index([passportId])
+  @@map("passport_term_progress")
+}
+
+model PassportCollectionProgress {
+  id                     String             @id @default(uuid()) @db.Uuid
+  passportId             String             @map("passport_id") @db.Uuid
+  passport               Passport           @relation(fields: [passportId], references: [id], onDelete: Cascade)
+  collectionId           String             @map("collection_id") @db.Uuid
+  collection             HandbookCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  learnedTermCount       Int                @default(0) @map("learned_term_count")
+  totalTermCountSnapshot Int                @default(0) @map("total_term_count_snapshot")
+
+  startedAt   DateTime  @default(now()) @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([passportId, collectionId])
+  @@index([passportId])
+  @@map("passport_collection_progress")
 }

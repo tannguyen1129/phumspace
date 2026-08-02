@@ -4,4 +4,5 @@ export class HealthResponseDto implements HealthResponseContract {
   status!: string;
   service!: string;
   timestamp!: string;
+  version?: string;
 }

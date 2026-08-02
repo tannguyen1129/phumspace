@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 describe('HealthController', () => {
   let controller: HealthController;
@@ -9,7 +10,15 @@ describe('HealthController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [HealthController],
-      providers: [HealthService],
+      providers: [
+        HealthService,
+        {
+          provide: PrismaService,
+          useValue: {
+            $queryRaw: jest.fn().mockResolvedValue([{ 1: 1 }]),
+          },
+        },
+      ],
     }).compile();
 
     controller = module.get<HealthController>(HealthController);
@@ -27,6 +36,19 @@ describe('HealthController', () => {
       expect(result).toHaveProperty('service', 'phumspace-api');
       expect(result).toHaveProperty('timestamp');
       expect(new Date(result.timestamp).toISOString()).toEqual(result.timestamp);
+    });
+  });
+
+  describe('getLiveness and getReadiness', () => {
+    it('getLiveness should return status UP', () => {
+      const result = controller.getLiveness();
+      expect(result.status).toBe('UP');
+    });
+
+    it('getReadiness should return status READY and database CONNECTED', async () => {
+      const result = await controller.getReadiness();
+      expect(result.status).toBe('READY');
+      expect(result.database).toBe('CONNECTED');
     });
   });
 });
