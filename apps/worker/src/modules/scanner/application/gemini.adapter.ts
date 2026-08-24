@@ -23,8 +23,8 @@ export interface EvidenceCandidate {
  * chinh thuc truoc khi trien khai production (xem docs Phu luc E, ghi chu cuoi tai lieu).
  */
 const MODEL_ALIAS_MAP: Record<string, string> = {
-  vision_fast: "gemini-2.0-flash",
-  grounded_quality: "gemini-2.0-flash",
+  vision_fast: "gemini-3.6-flash",
+  grounded_quality: "gemini-3.6-flash",
 };
 
 function resolveModelAlias(alias: string): string {

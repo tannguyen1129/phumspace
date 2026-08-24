@@ -4,6 +4,8 @@ Nen tang trai nghiem du lich so ve van hoa Khmer Nam Bo, khoi tao tai Tra Vinh. 
 
 Dac ta day du: xem `docs/`. Ke hoach trien khai: xem `/home/sontan29/.claude/plans/shiny-wandering-clarke.md` (Roadmap 4 giai doan + ke hoach ky thuat chi tiet GD1-MVP).
 
+Huong dan import va trien khai qua Google AI Studio: xem `docs/AI_STUDIO_DEPLOYMENT.md`.
+
 ## Cau truc monorepo
 
 ```

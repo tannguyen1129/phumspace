@@ -14,6 +14,8 @@ import { AnalyticsTracker } from "../components/AnalyticsTracker";
 import { InstallPrompt } from "../components/InstallPrompt";
 import { LocalePreferencesEffect } from "../components/LocalePreferencesEffect";
 import { OfflineMutationSync } from "../components/OfflineMutationSync";
+import { SiteHeader } from "../components/SiteHeader";
+import { SiteFooter } from "../components/SiteFooter";
 
 /**
  * next/font tu-host font (khong goi Google Fonts luc runtime, hop PWA/offline) — kich hoat that
@@ -76,7 +78,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <OnlineStatusBanner />
         <InstallPrompt />
         <OfflineMutationSync />
+        <SiteHeader />
         <div id="main-content">{children}</div>
+        <SiteFooter />
       </body>
     </html>
   );
