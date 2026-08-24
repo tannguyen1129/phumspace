@@ -1,0 +1,1 @@
+"use client";import { useEffect } from "react";import { usePathname } from "next/navigation";import { trackAnalytics } from "../lib/api-client";export function AnalyticsTracker(){const pathname=usePathname();useEffect(()=>{if(localStorage.getItem("ps_access_token"))trackAnalytics("PAGE_VIEW",{path:pathname}).catch(()=>undefined);},[pathname]);return null;}

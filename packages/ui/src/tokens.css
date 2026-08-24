@@ -1,0 +1,57 @@
+/*
+ * CSS variables sinh tu tokens.ts — giu dong bo thu cong o M0 (2 file nho, de doi chieu).
+ * Neu ve sau tokens phinh to, chuyen sang generate tu dong tu tokens.ts.
+ */
+:root {
+  --color-primary-deep-maroon: #5a2433;
+  --color-primary-dark: #35171f;
+  --color-heritage-gold: #c79a3b;
+  --color-saffron-accent: #d8782a;
+  --color-palm-green: #2f6653;
+  --color-ivory-surface: #fff9f0;
+  --color-sand-surface: #f2e8d8;
+  --color-ink: #1f2522;
+
+  --font-ui-latin: "Be Vietnam Pro", "Noto Sans", sans-serif;
+  --font-ui-khmer: "Noto Sans Khmer", sans-serif;
+  --font-display-khmer: "Noto Serif Khmer", serif;
+
+  --font-size-display: 32px;
+  --line-height-display: 40px;
+  --font-size-h1: 28px;
+  --line-height-h1: 36px;
+  --font-size-h2: 22px;
+  --line-height-h2: 30px;
+  --font-size-h3: 18px;
+  --line-height-h3: 26px;
+  --font-size-body: 16px;
+  --line-height-body: 24px;
+  --font-size-small: 14px;
+  --line-height-small: 20px;
+  --font-size-caption: 12px;
+  --line-height-caption: 18px;
+
+  --grid-unit: 4px;
+  --content-padding-mobile: 16px;
+  --card-radius: 20px;
+  --section-gap: 28px;
+  --min-touch-target: 44px;
+  --motion-duration: 200ms;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: var(--card-radius);
+
+  --shadow-sm: 0 1px 2px rgba(53, 23, 31, 0.08), 0 1px 1px rgba(53, 23, 31, 0.06);
+  --shadow-md: 0 4px 10px rgba(53, 23, 31, 0.12), 0 2px 4px rgba(53, 23, 31, 0.08);
+  --shadow-lg: 0 12px 24px rgba(53, 23, 31, 0.16), 0 4px 8px rgba(53, 23, 31, 0.1);
+}

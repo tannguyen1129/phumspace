@@ -1,0 +1,13 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, CalendarDays, MapPin, RefreshCw, Sailboat, Sparkles } from "lucide-react";
+import { ApiError, listFestivals, type FestivalSummary } from "../../lib/api-client";
+import { BottomNav } from "../../components/BottomNav";
+import { Button, CardSkeleton, FeedbackState, PageHeader } from "../../components/ui";
+export default function FestivalsPage() {
+  const [items, setItems] = useState<FestivalSummary[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState<string>();
+  function load() { setLoading(true); setError(undefined); listFestivals().then(setItems).catch((err) => setError(err instanceof ApiError ? err.message : "Không tải được lịch lễ hội.")).finally(() => setLoading(false)); }
+  useEffect(load, []);
+  return <main className="app-page festival-index" style={{ paddingBottom: 88 }}><PageHeader eyebrow="Festival Mode" title="Lễ hội Khmer Nam Bộ" subtitle="Theo dõi lịch tổ chức, chương trình, thông tin an toàn và những câu chuyện cộng đồng quanh mỗi lễ hội." actions={<Link href="/festivals/boat-teams" className="ps-btn ps-btn--secondary"><Sailboat size={17} /> Đội ghe Ngo</Link>} /><section className="festival-index__layout"><div className="festival-intro"><Sparkles size={23} /><div><strong>Thông tin từ PhumData</strong><span>Ngày tổ chức có thể thay đổi. Hãy mở từng lễ hội để xem trạng thái xác nhận và cảnh báo mới nhất.</span></div></div>{loading && <div className="festival-grid">{Array.from({ length: 6 }, (_, i) => <CardSkeleton key={i} lines={3} />)}</div>}{error && <FeedbackState title="Không tải được lễ hội" description={error} action={<Button onClick={load}><RefreshCw size={16} /> Thử lại</Button>} />}{!loading && !error && !items.length && <div className="festival-empty"><CalendarDays size={30} /><h2>Chưa có lễ hội được công bố</h2><p>Nội dung sẽ xuất hiện khi dữ liệu đã được xác minh và phát hành.</p></div>}{!loading && !error && <div className="festival-grid">{items.map((festival) => { const date = festival.nextOccurrenceAt ? new Date(festival.nextOccurrenceAt) : null; return <Link key={festival.id} href={`/festivals/${festival.entityId}`} className="festival-card"><div className="festival-card__date">{date ? <><strong>{date.getDate()}</strong><span>THG {date.getMonth() + 1}</span></> : <CalendarDays size={22} />}</div><div><small>{date ? date.toLocaleDateString("vi-VN", { year: "numeric", weekday: "long" }) : "CHƯA CÓ LỊCH MỚI"}</small><h2>{festival.preferredLabel}</h2><p><MapPin size={13} /> Xem chương trình và thông tin thực địa</p></div><ArrowRight size={18} /></Link>; })}</div>}</section><BottomNav /></main>;
+}

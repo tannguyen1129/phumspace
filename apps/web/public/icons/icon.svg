@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Motif truu tuong (vong tron + diem nhan), khong dung bieu tuong ton giao/sacred figure lam icon chuc nang (UX-V11 rule). -->
+  <rect width="192" height="192" rx="32" fill="#5A2433" />
+  <circle cx="96" cy="96" r="52" fill="none" stroke="#C79A3B" stroke-width="10" />
+  <circle cx="96" cy="96" r="16" fill="#D8782A" />
+</svg>

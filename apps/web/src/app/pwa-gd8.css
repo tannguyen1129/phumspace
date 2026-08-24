@@ -1,0 +1,22 @@
+.install-prompt{position:fixed;right:16px;bottom:18px;z-index:70;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;width:min(440px,calc(100% - 32px));padding:12px 14px;color:white;background:var(--maroon-900);border:1px solid rgba(255,255,255,.18);border-radius:16px;box-shadow:var(--shadow-lg)}.install-prompt div strong,.install-prompt div span{display:block}.install-prompt div span{margin-top:2px;color:#dbcbd0;font-size:11px}.install-prompt button{min-height:40px;padding:0 12px;color:var(--maroon-900);background:var(--gold-400);border:0;border-radius:10px;font-weight:800;cursor:pointer}.install-prompt button:last-child{display:grid;width:40px;padding:0;place-items:center;color:white;background:transparent}@media(max-width:520px){.install-prompt{grid-template-columns:auto 1fr auto}.install-prompt button:nth-of-type(1){grid-column:1/-1;width:100%}.install-prompt button:last-child{grid-column:3;grid-row:1}}
+.offline-sync-status {
+  position: fixed;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 44px;
+  padding: .65rem .9rem;
+  border: 1px solid var(--color-gold, #d7a936);
+  border-radius: 999px;
+  color: #fff;
+  background: #4b1728;
+  box-shadow: 0 8px 28px rgb(46 15 25 / 22%);
+  font: inherit;
+  font-weight: 700;
+}
+.audio-transcript { margin: .65rem 0 .25rem; line-height: 1.6; }
+.audio-rights { display: block; color: var(--color-text-muted, #69645d); }
+@media (min-width: 900px) { .offline-sync-status { bottom: 1.25rem; } }

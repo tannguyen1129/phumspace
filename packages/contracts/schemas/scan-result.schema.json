@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://phumspace.local/schemas/scan-result.schema.json",
+  "title": "ModelSynthesisOutput",
+  "description": "Structured output bat buoc cho buoc Synthesize cua AI Cultural Scanner. Doi chieu voi packages/contracts/src/scanner.ts::ModelSynthesisOutput.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decisionHint",
+    "primaryCandidateId",
+    "alternativeCandidateIds",
+    "observedFeatures",
+    "title",
+    "summary",
+    "citationIds",
+    "verificationLabel",
+    "nextActions"
+  ],
+  "properties": {
+    "decisionHint": {
+      "type": "string",
+      "enum": ["MATCH_CANDIDATE", "NEED_MORE_CONTEXT", "NO_MATCH"]
+    },
+    "primaryCandidateId": {
+      "type": ["string", "null"]
+    },
+    "alternativeCandidateIds": {
+      "type": "array",
+      "maxItems": 2,
+      "items": { "type": "string" }
+    },
+    "observedFeatures": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200
+    },
+    "summary": {
+      "type": "string",
+      "maxLength": 900
+    },
+    "culturalMeaning": {
+      "type": "string",
+      "maxLength": 900
+    },
+    "citationIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "verificationLabel": {
+      "type": "string",
+      "enum": ["UNVERIFIED", "COMMUNITY_CONFIRMED", "SOURCE_VERIFIED", "EXPERT_REVIEWED"]
+    },
+    "uncertaintyNote": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "nextActions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["OPEN_MAP", "PLAY_AUDIO", "START_QUIZ", "SAVE_ITEM", "VIEW_RELATED_TERM", "RETAKE_PHOTO"]
+      }
+    }
+  }
+}

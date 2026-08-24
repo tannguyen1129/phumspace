@@ -1,0 +1,121 @@
+name: phumspace
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-phumspace}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-phumspace_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-phumspace}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - phumspace_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-phumspace} -d ${POSTGRES_DB:-phumspace}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - phumspace_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-phumspace}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-phumspace_dev_password}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - phumspace_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Tao bucket media mac dinh moi khi stack khoi dong — thay the buoc setup thu cong.
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-phumspace}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-phumspace_dev_password}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-phumspace-media}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc mb --ignore-existing local/$$MEDIA_BUCKET
+      "
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-phumspace}:${POSTGRES_PASSWORD:-phumspace_dev_password}@postgres:5432/${POSTGRES_DB:-phumspace}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-phumspace}:${POSTGRES_PASSWORD:-phumspace_dev_password}@postgres:5432/${POSTGRES_DB:-phumspace}
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:${API_PORT:-3001}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+
+volumes:
+  phumspace_postgres_data:
+  phumspace_redis_data:
+  phumspace_minio_data:

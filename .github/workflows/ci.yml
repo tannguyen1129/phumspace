@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9.15.9"
+
+jobs:
+  lint-typecheck-test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Install Chromium for browser tests
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser E2E, accessibility and performance budgets
+        run: pnpm run e2e
+
+      - name: Smoke-test production web artifact
+        shell: bash
+        run: |
+          pnpm --filter @phumspace/web run start > /tmp/phumspace-web.log 2>&1 &
+          web_pid=$!
+          trap 'kill "$web_pid" 2>/dev/null || true' EXIT
+          pnpm run smoke:web
+
+  # Xac nhan migration chay sach tu repo moi tren mot Postgres that (theo DoD Milestone
+  # trong plan.md muc 2.5: "Co migration + seed data chay duoc tu repo sach").
+  migration-check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4-alpine
+        env:
+          POSTGRES_USER: phumspace
+          POSTGRES_PASSWORD: phumspace_ci_password
+          POSTGRES_DB: phumspace
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U phumspace -d phumspace"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://phumspace:phumspace_ci_password@localhost:5432/phumspace
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate up
+        run: pnpm --filter @phumspace/db exec node-pg-migrate up
+
+      - name: Migrate down (roi bao dam migrate up lai duoc — kiem tra tinh reversible)
+        run: pnpm --filter @phumspace/db exec node-pg-migrate down
+
+      - name: Migrate up lai
+        run: pnpm --filter @phumspace/db exec node-pg-migrate up
+
+      - name: Seed
+        run: pnpm --filter @phumspace/db run seed

@@ -1,0 +1,57 @@
+# Cloud Run service manifest MẪU cho apps/api — CHƯA triển khai, xem README.md trong thư mục
+# này. Thay <PROJECT_ID>, <REGION>, <IMAGE_URI> khi thật sự cần dùng; secret phải tạo trước qua
+# Secret Manager (KHÔNG copy giá trị .env trực tiếp vào file này).
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: phumspace-api
+  labels:
+    app: phumspace
+spec:
+  template:
+    metadata:
+      annotations:
+        # Cloud SQL Auth Proxy — noi ket noi qua Unix socket thay vi public IP.
+        run.googleapis.com/cloudsql-instances: <PROJECT_ID>:<REGION>:phumspace-db
+    spec:
+      containerConcurrency: 80
+      containers:
+        - image: <IMAGE_URI> # vd: <REGION>-docker.pkg.dev/<PROJECT_ID>/phumspace/api:latest
+          ports:
+            - containerPort: 3001
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: API_PORT
+              value: "3001"
+            - name: WEB_BASE_URL
+              value: https://<WEB_DOMAIN>
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: phumspace-database-url
+                  key: latest
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: phumspace-redis-url
+                  key: latest
+            - name: JWT_ACCESS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: phumspace-jwt-access-secret
+                  key: latest
+            - name: JWT_REFRESH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: phumspace-jwt-refresh-secret
+                  key: latest
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: phumspace-gemini-api-key
+                  key: latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
